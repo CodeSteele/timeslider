@@ -56,6 +56,7 @@ if (typeof jQuery === 'undefined') {
         ruler_enable_move: true,
         timecell_enable_move: true,
         timecell_enable_resize: true,
+        on_add_cell_callback: null,
         on_add_timecell_callback: null,
         on_toggle_timecell_callback: null,
         on_remove_timecell_callback: null,
@@ -198,23 +199,14 @@ if (typeof jQuery === 'undefined') {
     };
 
     TimeSlider.prototype.timestamp_to_date = function(timestamp) {
-        var datetime = new Date(timestamp);
-        return ('0' + datetime.getUTCDate().toString()).substr(-2) + '.' +
-            ('0' + (datetime.getUTCMonth() + 1).toString()).substr(-2) + '.' +
-            datetime.getUTCFullYear() + ' ' +
-            ('0' + datetime.getUTCHours().toString()).substr(-2) + ':' +
-            ('0' + datetime.getUTCMinutes().toString()).substr(-2) + ':' +
-            ('0' + datetime.getUTCSeconds().toString()).substr(-2) +
-            (this.options.show_ms ? ('.' + ('00' + datetime.getUTCMilliseconds().toString()).substr(-3)) : '');
+        return new Date(timestamp).toLocaleString();
     };
 
     TimeSlider.prototype.graduation_title = function(datetime) {
         if (datetime.getUTCHours() == 0 && datetime.getUTCMinutes() == 0 && datetime.getUTCMilliseconds() == 0) {
-            return ('0' + datetime.getUTCDate().toString()).substr(-2) + '.' +
-                ('0' + (datetime.getUTCMonth() + 1).toString()).substr(-2) + '.' +
-                datetime.getUTCFullYear();
+            return datetime.toLocaleDateString();
         }
-        return datetime.getUTCHours() + ':' + ('0' + datetime.getUTCMinutes().toString()).substr(-2);
+        return datetime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     };
 
     TimeSlider.prototype.ms_to_next_step = function(timestamp, step) {
@@ -649,7 +641,8 @@ if (typeof jQuery === 'undefined') {
 
             if (! timecell['stop']) {
                 if (this.running_time_cell) {
-                    throw new Error('Can\'t run several time cells');
+                    let errorDetails = $(this.running_time_cell).text() + ' & ' + JSON.stringify(timecell);
+                    throw new Error('Can\'t run several time cells: ' + errorDetails);
                 }
                 else {
                     this.running_time_cell = this.$ruler.find('#' + timecell['_id']);
@@ -671,6 +664,9 @@ if (typeof jQuery === 'undefined') {
                     stop = stop ? parseInt(stop) : null;
                     _this.options.on_dblclick_timecell_callback(p_id, start, stop);
                 });
+            }
+            if (typeof this.options.on_add_cell_callback == 'function') {
+                this.options.on_add_cell_callback(timecell['_id']);
             }
             return timecell;
         }
